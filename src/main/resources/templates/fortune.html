@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>AI 별자리 점성술소</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #1a0b2e 0%, #4a148c 100%); /* 신비로운 보라색 배경 */
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background-color: rgba(255, 255, 255, 0.9); /* 반투명 카드 */
+      border: none;
+      color: #333;
+      max-width: 600px;
+      width: 100%;
+    }
+    .magic-btn {
+      background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%);
+      border: none;
+      color: white;
+      font-weight: bold;
+    }
+    .magic-btn:hover {
+      opacity: 0.9;
+      color: white;
+    }
+    #response-area {
+      white-space: pre-wrap;
+      background-color: #f3e5f5; /* 연한 보라색 배경 */
+      min-height: 150px;
+      border-left: 5px solid #7b1fa2;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="card shadow-lg p-4">
+    <div class="text-center mb-4">
+      <h2 class="fw-bold text-primary">✨ AI 점성술소 ✨</h2>
+      <p class="text-muted">당신이 태어난 순간의 별들이 말해주는 운명</p>
+    </div>
+
+    <div class="card-body">
+      <!-- 입력 폼 -->
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label for="birthDate" class="form-label fw-bold">생년월일</label>
+          <input type="date" class="form-control" id="birthDate">
+        </div>
+        <div class="col-md-6">
+          <label for="birthTime" class="form-label fw-bold">태어난 시간</label>
+          <input type="time" class="form-control" id="birthTime">
+        </div>
+      </div>
+
+      <button id="sendBtn" class="btn magic-btn w-100 py-2 mb-4" onclick="getFortune()">
+        운세 확인하기 🔮
+      </button>
+
+      <!-- 결과 영역 -->
+      <h5 class="mb-3">📜 별들의 메시지:</h5>
+      <div id="loading" class="text-center text-secondary my-3" style="display: none;">
+        <div class="spinner-border text-primary" role="status"></div>
+        <div class="mt-2">별들의 위치를 계산하고 있습니다...</div>
+      </div>
+      <div id="response-area" class="p-4 rounded shadow-sm">
+        여기에 당신의 운세가 나타납니다.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  async function getFortune() {
+    const birthDate = document.getElementById('birthDate').value;
+    const birthTime = document.getElementById('birthTime').value;
+    const responseArea = document.getElementById('response-area');
+    const loading = document.getElementById('loading');
+    const btn = document.getElementById('sendBtn');
+
+    if (!birthDate || !birthTime) {
+      alert("정확한 분석을 위해 날짜와 시간을 모두 입력해주세요!");
+      return;
+    }
+
+    // UI 상태 변경
+    responseArea.innerText = "";
+    loading.style.display = 'block';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/fortune', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          birthDate: birthDate,
+          birthTime: birthTime
+        })
+      });
+
+      if (!res.ok) throw new Error("서버 통신 오류");
+
+      const data = await res.json();
+
+      // 타이핑 효과처럼 보이게 하거나 그냥 출력
+      responseArea.innerText = data.response;
+
+    } catch (error) {
+      responseArea.innerText = "별들과의 연결이 끊어졌습니다: " + error.message;
+    } finally {
+      loading.style.display = 'none';
+      btn.disabled = false;
+    }
+  }
+</script>
+
+</body>
+</html>

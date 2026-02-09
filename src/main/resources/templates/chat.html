@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Spring AI x Gemini</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .chat-container { max-width: 800px; margin-top: 50px; }
+        #response-area { white-space: pre-wrap; background-color: #f8f9fa; min-height: 100px; }
+        .gemini-badge { background: linear-gradient(45deg, #4285f4, #9b72cb); color: white; }
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container chat-container">
+    <div class="card shadow-sm">
+        <div class="card-header gemini-badge">
+            <h4 class="mb-0">Google Gemini 챗봇</h4>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="promptInput" class="form-label">Gemini에게 물어보세요</label>
+                <textarea class="form-control" id="promptInput" rows="3" placeholder="예: Spring Boot와 Spring AI의 차이점을 설명해줘"></textarea>
+            </div>
+            <button id="sendBtn" class="btn btn-primary w-100" onclick="sendPrompt()">질문하기</button>
+
+            <hr class="my-4">
+
+            <h5 class="mb-3">답변 결과:</h5>
+            <div id="loading" class="text-center text-secondary" style="display: none;">
+                <div class="spinner-border spinner-border-sm" role="status"></div>
+                Gemini가 생각 중입니다...
+            </div>
+            <div id="response-area" class="p-3 border rounded text-secondary">답변이 여기에 표시됩니다.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function sendPrompt() {
+        const input = document.getElementById('promptInput').value;
+        const responseArea = document.getElementById('response-area');
+        const loading = document.getElementById('loading');
+        const btn = document.getElementById('sendBtn');
+
+        if (!input.trim()) {
+            alert("질문을 입력해주세요.");
+            return;
+        }
+
+        responseArea.style.display = 'none';
+        loading.style.display = 'block';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/api/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: input })
+            });
+
+            if (!res.ok) throw new Error("서버 오류 발생");
+
+            const data = await res.json();
+
+            responseArea.innerText = data.response;
+            responseArea.classList.remove("text-secondary");
+            responseArea.classList.add("text-dark");
+
+        } catch (error) {
+            responseArea.innerText = "에러: " + error.message;
+            responseArea.classList.add("text-danger");
+        } finally {
+            loading.style.display = 'none';
+            responseArea.style.display = 'block';
+            btn.disabled = false;
+        }
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,10 @@
+spring:
+  ai:
+    openai:
+      api-key: ${GEMINI_API_KEY}  # Google AI Studio
+      base-url: https://generativelanguage.googleapis.com
+      chat:
+        options:
+          model: gemini-2.5-flash-preview-09-2025
+          temperature: 0.7
+        completions-path: /v1beta/openai/chat/completions
