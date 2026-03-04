@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- 1. 화면에 로그를 출력하는 설정 (Console Appender) -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!-- 날짜, 시간, 스레드, 로그 레벨, 메시지 등을 출력하는 패턴 -->
+            <pattern>logback - %d{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) --- [%thread] %cyan(%logger{36}) : %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 2. 파일에 로그를 저장하는 설정 (Rolling File Appender) -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 로그 파일이 저장될 경로와 이름 -->
+        <file>/logs/application.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level --- [%thread] %logger{36} : %msg%n</pattern>
+        </encoder>
+
+        <!-- 날짜가 바뀌거나 파일 용량이 꽉 차면 새로운 파일을 만드는 정책 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 하루 단위로 새로운 로그 파일 생성 (예: application-2026-03-02.log) -->
+            <fileNamePattern>logs/application-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- 로그 파일을 최대 30일 동안만 보관 -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 3. 전체 애플리케이션에 적용할 기본 로그 레벨 (Root) -->
+    <!-- INFO 수준 이상의 로그(INFO, WARN, ERROR)만 기록합니다 -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
+    </root>
+
+    <!-- (선택) 특정 패키지(예: 내 프로젝트)만 로그 레벨을 다르게 주고 싶을 때 -->
+    <!-- <logger name="com.myproject" level="DEBUG" /> -->
+
+</configuration>

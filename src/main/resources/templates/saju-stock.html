@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>사주 주식 도사</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-gold: #fbbf24;
+      --text-white: #e2e8f0;
+      --accent-red: #f87171;
+      --table-border: #475569;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Noto Serif KR', serif;
+      background-color: var(--bg-color);
+      color: var(--text-white);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden; /* 안개 넘침 방지 */
+    }
+
+    .container {
+      background-color: rgba(30, 41, 59, 0.95);
+      border: 2px solid var(--text-gold);
+      border-radius: 15px;
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+      padding: 2rem;
+      width: 90%;
+      max-width: 800px;
+      margin: 2rem 0;
+      position: relative; /* 안개 위치 기준점 */
+      overflow: hidden;   /* 안개가 카드 밖으로 안 나가게 */
+      min-height: 400px;  /* 안개 낄 때 모양 유지 */
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* === 기존 스타일 === */
+    h1 { color: var(--text-gold); text-align: center; z-index: 10; position: relative; }
+    .subtitle { color: #94a3b8; text-align: center; margin-bottom: 2rem; z-index: 10; position: relative; }
+    .form-group { margin-bottom: 1.5rem; z-index: 10; position: relative; }
+    label { display: block; color: var(--text-gold); margin-bottom: 0.5rem; }
+    input {
+      width: 100%; padding: 10px; background: #0f172a;
+      border: 1px solid #475569; color: white; border-radius: 5px; box-sizing: border-box;
+    }
+    button {
+      width: 100%; padding: 12px; background: var(--text-gold); border: none; font-weight: bold; cursor: pointer;
+      z-index: 10; position: relative; transition: all 0.3s;
+    }
+    button:disabled { background: #475569; cursor: not-allowed; }
+
+    /* === ☁️ 신비로운 안개(Cloud) 효과 스타일 === */
+    #fogLayer {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; /* 클릭 통과 */
+      display: none; /* 기본 숨김 */
+      z-index: 5;
+    }
+
+    .fog-particle {
+      position: absolute;
+      background: radial-gradient(circle, rgba(200,210,230,0.3) 0%, rgba(200,210,230,0) 70%);
+      border-radius: 50%;
+      filter: blur(15px);
+      animation: drift 4s infinite alternate ease-in-out;
+    }
+
+    /* 안개 배치 (랜덤한 위치와 크기) */
+    .fog-1 { top: 10%; left: -10%; width: 300px; height: 300px; animation-duration: 5s; }
+    .fog-2 { bottom: 10%; right: -10%; width: 400px; height: 400px; animation-duration: 7s; animation-delay: 1s; }
+    .fog-3 { top: 40%; left: 30%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(251, 191, 36, 0.15) 0%, rgba(0,0,0,0) 70%); animation-duration: 6s; } /* 금색 기운 */
+
+    @keyframes drift {
+      0% { transform: translate(0, 0) scale(1); opacity: 0.5; }
+      100% { transform: translate(20px, -10px) scale(1.1); opacity: 0.8; }
+    }
+
+    /* 안개 걷히는 애니메이션 (Javascript로 클래스 추가 시 발동) */
+    .clearing-fog .fog-particle {
+      transition: all 1.5s ease-out;
+      transform: scale(3); /* 확 커지면서 */
+      opacity: 0;          /* 사라짐 */
+    }
+
+    /* 텍스트 로더 */
+    .loader-text {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: var(--text-gold);
+      font-size: 1.2rem;
+      text-shadow: 0 0 10px rgba(0,0,0,0.8);
+      z-index: 6;
+      display: none;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+    /* === 결과 영역 === */
+    #resultArea {
+      display: none;
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px dashed var(--text-gold);
+      text-align: left;
+      opacity: 0; /* 서서히 나타나기 위해 */
+    }
+
+    /* 결과 나타나는 애니메이션 */
+    .reveal-result {
+      animation: fadeInUp 1.5s forwards; /* 안개가 걷히는 시간과 맞춤 */
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 마크다운 스타일링 (이전과 동일) */
+    .markdown-body h3 { color: var(--text-gold); border-bottom: 2px solid #b45309; padding-bottom: 0.3rem; margin-top: 2rem; font-size: 1.3rem; }
+    .markdown-body strong { color: var(--accent-red); font-weight: 700; }
+    .markdown-body p { margin-bottom: 1rem; font-size: 1rem; color: #cbd5e1; }
+    .markdown-body table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; background-color: #0f172a; border-radius: 8px; overflow: hidden; }
+    .markdown-body th { background-color: #334155; color: var(--text-gold); padding: 12px; border-bottom: 2px solid var(--text-gold); }
+    .markdown-body td { padding: 12px; border-bottom: 1px solid var(--table-border); color: #e2e8f0; }
+    .markdown-body td:first-child { font-weight: bold; color: var(--text-gold); text-align: center; }
+    .markdown-body blockquote, .markdown-body p:last-child { font-size: 0.85rem; color: #64748b; border-left: 3px solid #64748b; padding-left: 1rem; margin-top: 2rem; }
+
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- 안개 레이어 -->
+  <div id="fogLayer">
+    <div class="fog-particle fog-1"></div>
+    <div class="fog-particle fog-2"></div>
+    <div class="fog-particle fog-3"></div> <!-- 금색 기운 -->
+  </div>
+
+  <div class="loader-text" id="loaderText">
+    🌪️ 천기를 읽는 중...
+  </div>
+
+  <div id="inputSection">
+    <h1>🔮 사주 주식 도사</h1>
+    <p class="subtitle">당신의 생년월일에 숨겨진 떡상 종목을 찾아드립니다.</p>
+
+    <form id="sajuForm">
+      <div class="form-group">
+        <label>생년월일</label>
+        <input type="date" id="birthDate" required>
+      </div>
+      <div class="form-group">
+        <label>태어난 시간</label>
+        <input type="time" id="birthTime" required>
+      </div>
+      <button type="submit" id="submitBtn">운명 조회하기</button>
+    </form>
+  </div>
+
+  <div id="resultArea">
+    <div id="aiContent" class="markdown-body"></div>
+    <!-- 다시하기 버튼 (결과 나오면 표시) -->
+    <button onclick="location.reload()" style="margin-top: 20px; background: #334155; color: #94a3b8;">🔄 다른 운세 보기</button>
+  </div>
+</div>
+
+<script>
+  document.getElementById('sajuForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const fogLayer = document.getElementById('fogLayer');
+    const loaderText = document.getElementById('loaderText');
+    const resultArea = document.getElementById('resultArea');
+    const aiContent = document.getElementById('aiContent');
+    const inputSection = document.getElementById('inputSection'); // 입력폼 전체
+    const btn = document.getElementById('submitBtn');
+
+    // 1. 로딩 시작: 안개 생성 & 입력창 흐리게
+    fogLayer.style.display = 'block';
+    fogLayer.classList.remove('clearing-fog'); // 초기화
+    loaderText.style.display = 'block';
+    btn.disabled = true;
+
+    // 입력폼을 살짝 숨김 (신비감 조성)
+    inputSection.style.transition = "opacity 1s";
+    inputSection.style.opacity = "0.3";
+
+    try {
+      const response = await fetch('/api/saju-stock/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          birthDate: document.getElementById('birthDate').value,
+          birthTime: document.getElementById('birthTime').value
+        })
+      });
+
+      const data = await response.json();
+
+      // 마크다운 변환
+      aiContent.innerHTML = marked.parse(data.result);
+
+      // 2. 응답 도착: 안개 걷히는 연출 (Clearing Effect)
+      loaderText.style.display = 'none'; // 텍스트 먼저 끔
+      fogLayer.classList.add('clearing-fog'); // CSS Transition 발동 (확 커지며 사라짐)
+
+      // 안개가 걷히는 시간(1.5초) 후에 결과 보여주기
+      setTimeout(() => {
+        inputSection.style.display = 'none'; // 입력창 완전 숨김
+        fogLayer.style.display = 'none';     // 안개 제거
+
+        resultArea.style.display = 'block';  // 결과 박스 보임
+        resultArea.classList.add('reveal-result'); // 서서히 올라오는 애니메이션
+      }, 1200); // 1.2초 딜레이 (안개 애니메이션과 싱크 맞춤)
+
+    } catch (error) {
+      alert("천기를 읽는 도중 먹구름이 끼었습니다. (에러 발생)");
+      location.reload();
+    }
+  });
+</script>
+</body>
+</html>
